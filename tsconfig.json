@@ -1,0 +1,11 @@
+{
+	"extends": "@sindresorhus/tsconfig",
+	"compilerOptions": {
+		"target": "es2018",
+		"module": "es2015",
+		"experimentalDecorators": true
+	},
+	"files": [
+		"index.ts"
+	]
+}

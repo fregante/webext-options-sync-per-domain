@@ -1,87 +1,142 @@
-import OptionsSync, {Migration} from 'webext-options-sync';
-import {isBackgroundPage} from 'webext-detect-page';
-import {getAdditionalPermissions} from 'webext-additional-permissions';
+import 'webext-permissions-events-polyfill';
+import * as mem from 'mem';
+import {patternToRegex} from 'webext-patterns';
+import OptionsSync, {Options, Setup} from 'webext-options-sync';
+import {isBackgroundPage, isContentScript} from 'webext-detect-page';
+import {getAdditionalPermissions, getManifestPermissionsSync} from 'webext-additional-permissions';
 
-export type RGHOptions = typeof defaults;
+// Export OptionsSync so that OptionsSyncPerDomain users can use it in `options-storage` without depending on it directly
+// eslint-disable-next-line import/export
+export * from 'webext-options-sync';
+export {OptionsSync};
 
-function featureWasRenamed(from: string, to: string): Migration<RGHOptions> {
-	return (options: RGHOptions) => {
-		if (typeof options[`feature:${from}`] === 'boolean') {
-			options[`feature:${to}`] = options[`feature:${from}`];
+/** Ensures that only the base storage name (i.e. without domain) is used in functions that require it */
+type BaseStorageName = string;
+
+const defaultOrigins = patternToRegex(...getManifestPermissionsSync().origins);
+
+// TODO: this shouldn't memoize calls across instances
+function memoizeMethod(target: any, propertyKey: string, descriptor: PropertyDescriptor): void {
+	descriptor.value = mem(target[propertyKey]);
+}
+
+function parseHost(origin: string): string {
+	return origin.includes('//') ? new URL(origin).host : origin;
+}
+
+export default class OptionsSyncPerDomain<TOptions extends Options> {
+	static readonly migrations = OptionsSync.migrations;
+
+	readonly #defaultOptions: Readonly<Setup<TOptions> & {storageName: BaseStorageName}>;
+
+	constructor(options: Setup<TOptions>) {
+		// Apply defaults
+		this.#defaultOptions = {
+			...options,
+			storageName: options.storageName ?? 'options'
+		};
+
+		if (!isBackgroundPage()) {
+			return;
 		}
-	};
-}
 
-// TypeScript doesn't merge the definitions so `...` is not equivalent.
-const defaults = Object.assign({
-	customCSS: '',
-	personalToken: '',
-	logging: false
-}, __featuresOptionDefaults__); // This variable is replaced at build time
+		// Run migrations for every origin
+		// eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
+		if (options.migrations?.length! > 0) {
+			this.getAllOrigins();
+		}
 
-const migrations = [
-	featureWasRenamed('branch-buttons', 'latest-tag-button'), // Merged on January 10th
+		// Delete stored options when permissions are removed
+		chrome.permissions.onRemoved.addListener(({origins}) => {
+			const storageKeysToRemove = (origins ?? [])
+				.filter(key => !defaultOrigins.test(key))
+				.map(key => this.getStorageNameForOrigin(key));
 
-	// Removed features will be automatically removed from the options as well
-	OptionsSync.migrations.removeUnused
-];
-
-// Keep this function "dumb". Don't move more "smart" domain selection logic in here
-function getStorageName(host: string): string {
-	if (/(^|\.)github\.com$/.test(host)) {
-		return 'options';
+			chrome.storage.sync.remove(storageKeysToRemove);
+		});
 	}
 
-	return `options-${host}`;
-}
+	@memoizeMethod
+	getOptionsForOrigin(origin = location.origin): OptionsSync<TOptions> {
+		// Extension pages should always use the default options as base
+		if (!origin.startsWith('http') || defaultOrigins.test(origin)) {
+			return new OptionsSync(this.#defaultOptions);
+		}
 
-function getOptions(host: string): OptionsSync<RGHOptions> {
-	return new OptionsSync({storageName: getStorageName(host), migrations, defaults});
-}
-
-// This should return the options for the current domain or, if called from an extension page, for `github.com`
-export default getOptions(location.protocol.startsWith('http') ? location.host : 'github.com');
-
-export async function getAllOptions(): Promise<Map<string, OptionsSync<RGHOptions>>> {
-	const optionsByDomain = new Map<string, OptionsSync<RGHOptions>>();
-	optionsByDomain.set('github.com', getOptions('github.com'));
-
-	const {origins} = await getAdditionalPermissions();
-	for (const origin of origins) {
-		const {host} = new URL(origin);
-		optionsByDomain.set(host, getOptions(host));
+		return new OptionsSync({
+			...this.#defaultOptions,
+			storageName: this.getStorageNameForOrigin(origin)
+		});
 	}
 
-	return optionsByDomain;
-}
+	@memoizeMethod
+	async getAllOrigins(): Promise<Map<string, OptionsSync<TOptions>>> {
+		if (isContentScript()) {
+			throw new Error('This function only works on extension pages');
+		}
 
-async function initializeAllOptions(): Promise<void> {
-	// Run migrations for every domain
-	const {origins} = await getAdditionalPermissions();
-	for (const origin of origins) {
-		getOptions(new URL(origin).host);
+		const instances = new Map<string, OptionsSync<TOptions>>();
+		instances.set('default', this.getOptionsForOrigin());
+
+		const {origins} = await getAdditionalPermissions();
+		for (const origin of origins) {
+			instances.set(
+				parseHost(origin),
+				this.getOptionsForOrigin(origin)
+			);
+		}
+
+		return instances;
 	}
 
-	// Add new domains
-	browser.permissions.onAdded!.addListener(({origins}) => {
-		if (origins) {
-			for (const origin of origins) {
-				getOptions(new URL(origin).host);
+	async syncForm(form: string | HTMLFormElement): Promise<void> {
+		if (isContentScript()) {
+			throw new Error('This function only works on extension pages');
+		}
+
+		if (typeof form === 'string') {
+			form = document.querySelector<HTMLFormElement>(form)!;
+		}
+
+		// Start synching the default options
+		await this.getOptionsForOrigin().syncForm(form);
+
+		// Look for other origins
+		const optionsByOrigin = await this.getAllOrigins();
+		if (optionsByOrigin.size === 1) {
+			return;
+		}
+
+		// Create domain picker
+		const dropdown = document.createElement('select');
+		dropdown.addEventListener('change', this._domainChangeHandler.bind(this));
+		for (const domain of optionsByOrigin.keys()) {
+			const option = document.createElement('option');
+			option.value = domain;
+			option.textContent = domain;
+			dropdown.append(option);
+		}
+
+		// Wrap and prepend to form
+		const wrapper = document.createElement('p');
+		wrapper.append('Domain selector: ', dropdown);
+		wrapper.classList.add('OptionsSyncPerDomain-picker');
+		form.prepend(wrapper, document.createElement('hr'));
+	}
+
+	private getStorageNameForOrigin(origin: string): string {
+		return this.#defaultOptions.storageName + '-' + parseHost(origin);
+	}
+
+	private async _domainChangeHandler(event: Event): Promise<void> {
+		const dropdown = event.currentTarget as HTMLSelectElement;
+
+		for (const [domain, options] of await this.getAllOrigins()) {
+			if (dropdown.value === domain) {
+				options.syncForm(dropdown.form!);
+			} else {
+				options.stopSyncForm();
 			}
 		}
-	});
-
-	// Remove old domains
-	browser.permissions.onRemoved!.addListener(({origins}) => {
-		if (origins) {
-			const optionKeysToRemove = origins
-				.map(origin => getStorageName(new URL(origin).host))
-				.filter(key => key !== 'options');
-			browser.storage.sync.remove(optionKeysToRemove);
-		}
-	});
-}
-
-if (isBackgroundPage()) {
-	initializeAllOptions();
+	}
 }
