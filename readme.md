@@ -140,8 +140,8 @@ Returns an origin-specific instance of OptionsSync. If called from an extension 
 
 ##### origin
 
-Type: `string`
-Default: `location.origin`
+Type: `string` <br>
+Default: `location.origin` <br>
 Example: `http://example.com`
 
 #### perDomainOptions.getAllOrigins()
