@@ -55,7 +55,7 @@ export default perDomainOptions.getOptionsForOrigin();
 
 </table>
 
-Now `options-storage.js` will the same old `OptionsSync` instance, except it varies depending on the current domain.
+Now `options-storage.js` will export the same old `OptionsSync` instance, but it will very depending on the current domain.
 
 You'll also need to change 2 lines on the options page:
 
