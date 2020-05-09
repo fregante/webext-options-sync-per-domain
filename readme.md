@@ -11,7 +11,7 @@ Prerequisites
 - Your WebExtension can be enabled on multiple optional domains, maybe via [webext-dynamic-content-scripts](https://github.com/fregante/webext-dynamic-content-scripts/blob/master/how-to-add-github-enterprise-support-to-web-extensions.md)
 - Your users want to customize your extension’s options for each domain, indipendently.
 
-In that case, `webext-options-sync-per-domain` as a wrapper for `webext-options-sync` with these feature:
+In that case, `webext-options-sync-per-domain` extends `webext-options-sync` with these feature:
 
 - Automatically detects new `origin` permissions
 - Prepares a fresh set of options for each new origin
