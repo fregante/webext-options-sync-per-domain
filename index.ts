@@ -41,7 +41,6 @@ export default class OptionsSyncPerDomain<TOptions extends Options> {
 		}
 
 		// Run migrations for every origin
-		// eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
 		if (options.migrations?.length! > 0) {
 			this.getAllOrigins();
 		}
