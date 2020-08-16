@@ -1,5 +1,5 @@
 import 'webext-permissions-events-polyfill';
-import * as mem from 'mem';
+import mem = require('mem');
 import {patternToRegex} from 'webext-patterns';
 import OptionsSync, {Options, Setup} from 'webext-options-sync';
 import {isBackgroundPage, isContentScript} from 'webext-detect-page';
