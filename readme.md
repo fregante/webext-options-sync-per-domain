@@ -11,7 +11,7 @@ Prerequisites
 - Your WebExtension can be enabled on multiple optional domains, maybe via [webext-dynamic-content-scripts](https://github.com/fregante/webext-dynamic-content-scripts/blob/master/how-to-add-github-enterprise-support-to-web-extensions.md)
 - Your users want to customize your extension’s options for each domain, independently.
 
-In that case, `webext-options-sync-per-domain` as a wrapper for `webext-options-sync` with these feature:
+In that case, `webext-options-sync-per-domain` extends `webext-options-sync` with these feature:
 
 - Automatically detects new `origin` permissions
 - Prepares a fresh set of options for each new origin
@@ -55,7 +55,7 @@ export default perDomainOptions.getOptionsForOrigin();
 
 </table>
 
-Now `options-storage.js` will the same old `OptionsSync` instance, except it varies depending on the current domain.
+Now `options-storage.js` will export the same old `OptionsSync` instance, but it will very depending on the current domain.
 
 You'll also need to change 2 lines on the options page:
 
@@ -140,8 +140,8 @@ Returns an origin-specific instance of OptionsSync. If called from an extension 
 
 ##### origin
 
-Type: `string`
-Default: `location.origin`
+Type: `string` <br>
+Default: `location.origin` <br>
 Example: `http://example.com`
 
 #### perDomainOptions.getAllOrigins()
