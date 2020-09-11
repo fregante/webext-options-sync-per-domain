@@ -162,7 +162,6 @@ console.log(await instances.get('example.com').getAll());
 
 - [webext-additional-permissions](https://github.com/fregante/webext-additional-permissions) - Get any optional permissions that users have granted you.
 - [webext-dynamic-content-scripts](https://github.com/fregante/webext-dynamic-content-scripts) - Automatically registers your content_scripts on domains added via permission.request
-- [webext-permissions-events-polyfill](https://github.com/fregante/webext-permissions-events-polyfill) - Polyfill for `onAdded` and `onRemoved` permission events for Firefox.
 
 ### Others
 

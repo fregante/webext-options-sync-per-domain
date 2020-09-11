@@ -1,4 +1,3 @@
-import 'webext-permissions-events-polyfill';
 import mem = require('mem');
 import {patternToRegex} from 'webext-patterns';
 import OptionsSync, {Options, Setup} from 'webext-options-sync';
