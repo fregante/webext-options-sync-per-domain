@@ -44,7 +44,7 @@
 		}
 	},
 	"dependencies": {
-		"mem": "^6.1.1",
+		"mem": "^6.1.0",
 		"webext-additional-permissions": "^1.0.0",
 		"webext-detect-page": "^2.0.4",
 		"webext-options-sync": "^2.0.0-2",
