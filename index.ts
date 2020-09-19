@@ -1,5 +1,4 @@
-import 'webext-permissions-events-polyfill';
-import * as mem from 'mem';
+import mem = require('mem');
 import {patternToRegex} from 'webext-patterns';
 import OptionsSync, {Options, Setup} from 'webext-options-sync';
 import {isBackgroundPage, isContentScript} from 'webext-detect-page';
@@ -41,7 +40,6 @@ export default class OptionsSyncPerDomain<TOptions extends Options> {
 		}
 
 		// Run migrations for every origin
-		// eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
 		if (options.migrations?.length! > 0) {
 			this.getAllOrigins();
 		}

@@ -46,17 +46,16 @@
 	"dependencies": {
 		"mem": "^6.1.0",
 		"webext-additional-permissions": "^1.0.0",
-		"webext-detect-page": "^2.0.4",
-		"webext-options-sync": "^1.2.4-0",
-		"webext-patterns": "^0.9.0",
-		"webext-permissions-events-polyfill": "^1.0.1"
+		"webext-detect-page": "^2.0.5",
+		"webext-options-sync": "^2.0.0",
+		"webext-patterns": "^0.9.0"
 	},
 	"devDependencies": {
 		"@sindresorhus/tsconfig": "^0.7.0",
-		"@types/chrome": "0.0.107",
+		"@types/chrome": "0.0.123",
 		"esm": "^3.2.25",
-		"type-fest": "^0.13.1",
-		"typescript": "^3.8.3",
-		"xo": "^0.30.0"
+		"type-fest": "^0.16.0",
+		"typescript": "^4.0.3",
+		"xo": "^0.33.1"
 	}
 }
