@@ -76,7 +76,7 @@ export default class OptionsSyncPerDomain<TOptions extends Options> {
 		const instances = new Map<string, OptionsSync<TOptions>>();
 		instances.set('default', this.getOptionsForOrigin());
 
-		const {origins} = await getAdditionalPermissions();
+		const {origins} = await getAdditionalPermissions({strictOrigins: false});
 		for (const origin of origins) {
 			instances.set(
 				parseHost(origin),

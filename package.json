@@ -45,7 +45,7 @@
 	},
 	"dependencies": {
 		"mem": "^6.1.0",
-		"webext-additional-permissions": "^1.0.0",
+		"webext-additional-permissions": "^1.1.0",
 		"webext-detect-page": "^2.0.5",
 		"webext-options-sync": "^2.0.0",
 		"webext-patterns": "^0.9.0"
