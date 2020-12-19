@@ -20,7 +20,7 @@ function memoizeMethod(target: any, propertyKey: string, descriptor: PropertyDes
 }
 
 function parseHost(origin: string): string {
-	return origin.includes('//') ? origin.split('/')[2].replace('*.', '') : origin;
+	return origin.includes('//') ? origin.split('/')[2]!.replace('*.', '') : origin;
 }
 
 export default class OptionsSyncPerDomain<TOptions extends Options> {
