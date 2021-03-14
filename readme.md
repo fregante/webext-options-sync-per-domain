@@ -20,7 +20,9 @@ In that case, `webext-options-sync-per-domain` extends `webext-options-sync` wit
 
 ## Install
 
-You can just download the [standalone bundle](https://packd.fregante.now.sh/webext-options-sync-per-domain@latest?name=OptionsSyncPerDomain) (it might take a minute to download) and include the file in your `manifest.json`, or:
+You can download the [standalone bundle](https://bundle.fregante.com/?pkg=webext-options-sync-per-domain&global=OptionsSyncPerDomain) and include it in your `manifest.json`.
+
+Or use `npm`:
 
 ```sh
 npm install webext-options-sync-per-domain
