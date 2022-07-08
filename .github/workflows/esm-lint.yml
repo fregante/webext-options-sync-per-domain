@@ -53,9 +53,7 @@ jobs:
       - uses: actions/download-artifact@v2
       - run: npm install ./artifact
       - run: echo "${{ env.IMPORT_TEXT }} '${{ env.NPM_MODULE_NAME }}'" > index.ts
-      - run: |
-          echo '{"compilerOptions": {"target": "es2021"}}' > tsconfig.json
-      - run: tsc index.ts
+      - run: tsc index.ts --target es2021
       - run: cat index.js
   Node:
     runs-on: ubuntu-latest
