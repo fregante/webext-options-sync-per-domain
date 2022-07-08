@@ -174,4 +174,4 @@ console.log(await instances.get('example.com').getAll());
 
 ## License
 
-MIT © [Federico Brigante](https://bfred.it)
+MIT © [Federico Brigante](https://fregante.com)
