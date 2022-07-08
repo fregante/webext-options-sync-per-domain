@@ -11,7 +11,8 @@ export * from 'webext-options-sync';
 /** Ensures that only the base storage name (i.e. without domain) is used in functions that require it */
 type BaseStorageName = string;
 
-const defaultOrigins = patternToRegex(...getManifestPermissionsSync().origins);
+// Memoized to have it evaluate once
+const defaultOrigins = mem(() => patternToRegex(...getManifestPermissionsSync().origins));
 
 // TODO: this shouldn't memoize calls across instances
 function memoizeMethod(target: any, propertyKey: string, descriptor: PropertyDescriptor): void {
@@ -48,7 +49,7 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		// Delete stored options when permissions are removed
 		chrome.permissions.onRemoved.addListener(({origins}) => {
 			const storageKeysToRemove = (origins ?? [])
-				.filter(key => !defaultOrigins.test(key))
+				.filter(key => !defaultOrigins().test(key))
 				.map(key => this.getStorageNameForOrigin(key));
 
 			chrome.storage.sync.remove(storageKeysToRemove);
@@ -58,7 +59,7 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 	@memoizeMethod
 	getOptionsForOrigin(origin = location.origin): OptionsSync<UserOptions> {
 		// Extension pages should always use the default options as base
-		if (!origin.startsWith('http') || defaultOrigins.test(origin)) {
+		if (!origin.startsWith('http') || defaultOrigins().test(origin)) {
 			return new OptionsSync(this.#defaultOptions);
 		}
 
