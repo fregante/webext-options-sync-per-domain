@@ -14,7 +14,8 @@ type BaseStorageName = string;
 const defaultOrigins = patternToRegex(...getManifestPermissionsSync().origins);
 
 // TODO: this shouldn't memoize calls across instances
-function memoizeMethod(target: Record<string, () => unknown>, propertyKey: string, descriptor: PropertyDescriptor): void {
+function memoizeMethod(target: any, propertyKey: string, descriptor: PropertyDescriptor): void {
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Target should be OptionsSyncPerDomain<UserOptions>, but decorators don't pass around the generic
 	descriptor.value = mem(target[propertyKey]!);
 }
 
