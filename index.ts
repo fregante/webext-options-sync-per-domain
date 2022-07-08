@@ -6,7 +6,7 @@ import {getAdditionalPermissions, getManifestPermissionsSync} from 'webext-addit
 
 // Export OptionsSync so that OptionsSyncPerDomain users can use it in `options-storage` without depending on it directly
 
-export * from 'webext-options-sync';
+export {default as OptionsSync} from 'webext-options-sync';
 
 /** Ensures that only the base storage name (i.e. without domain) is used in functions that require it */
 type BaseStorageName = string;
@@ -140,5 +140,3 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		}
 	}
 }
-
-export {default as OptionsSync} from 'webext-options-sync';
