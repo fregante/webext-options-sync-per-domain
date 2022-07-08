@@ -1,38 +1,39 @@
-import mem = require('mem');
+import mem from 'mem';
 import {patternToRegex} from 'webext-patterns';
 import OptionsSync, {Options, Setup} from 'webext-options-sync';
 import {isBackgroundPage, isContentScript} from 'webext-detect-page';
 import {getAdditionalPermissions, getManifestPermissionsSync} from 'webext-additional-permissions';
 
 // Export OptionsSync so that OptionsSyncPerDomain users can use it in `options-storage` without depending on it directly
-// eslint-disable-next-line import/export
 export * from 'webext-options-sync';
-export {OptionsSync};
+export {default as OptionsSync} from 'webext-options-sync';
 
 /** Ensures that only the base storage name (i.e. without domain) is used in functions that require it */
 type BaseStorageName = string;
 
-const defaultOrigins = patternToRegex(...getManifestPermissionsSync().origins);
+// Memoized to have it evaluate once
+const defaultOrigins = mem(() => patternToRegex(...getManifestPermissionsSync().origins));
 
 // TODO: this shouldn't memoize calls across instances
 function memoizeMethod(target: any, propertyKey: string, descriptor: PropertyDescriptor): void {
-	descriptor.value = mem(target[propertyKey]);
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Target should be OptionsSyncPerDomain<UserOptions>, but decorators don't pass around the generic
+	descriptor.value = mem(target[propertyKey]!);
 }
 
 function parseHost(origin: string): string {
 	return origin.includes('//') ? origin.split('/')[2]!.replace('*.', '') : origin;
 }
 
-export default class OptionsSyncPerDomain<TOptions extends Options> {
+export default class OptionsSyncPerDomain<UserOptions extends Options> {
 	static readonly migrations = OptionsSync.migrations;
 
-	readonly #defaultOptions: Readonly<Setup<TOptions> & {storageName: BaseStorageName}>;
+	readonly #defaultOptions: Readonly<Setup<UserOptions> & {storageName: BaseStorageName}>;
 
-	constructor(options: Setup<TOptions>) {
+	constructor(options: Setup<UserOptions>) {
 		// Apply defaults
 		this.#defaultOptions = {
 			...options,
-			storageName: options.storageName ?? 'options'
+			storageName: options.storageName ?? 'options',
 		};
 
 		if (!isBackgroundPage()) {
@@ -40,6 +41,7 @@ export default class OptionsSyncPerDomain<TOptions extends Options> {
 		}
 
 		// Run migrations for every origin
+		// eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
 		if (options.migrations?.length! > 0) {
 			this.getAllOrigins();
 		}
@@ -47,7 +49,7 @@ export default class OptionsSyncPerDomain<TOptions extends Options> {
 		// Delete stored options when permissions are removed
 		chrome.permissions.onRemoved.addListener(({origins}) => {
 			const storageKeysToRemove = (origins ?? [])
-				.filter(key => !defaultOrigins.test(key))
+				.filter(key => !defaultOrigins().test(key))
 				.map(key => this.getStorageNameForOrigin(key));
 
 			chrome.storage.sync.remove(storageKeysToRemove);
@@ -55,32 +57,32 @@ export default class OptionsSyncPerDomain<TOptions extends Options> {
 	}
 
 	@memoizeMethod
-	getOptionsForOrigin(origin = location.origin): OptionsSync<TOptions> {
+	getOptionsForOrigin(origin = location.origin): OptionsSync<UserOptions> {
 		// Extension pages should always use the default options as base
-		if (!origin.startsWith('http') || defaultOrigins.test(origin)) {
+		if (!origin.startsWith('http') || defaultOrigins().test(origin)) {
 			return new OptionsSync(this.#defaultOptions);
 		}
 
 		return new OptionsSync({
 			...this.#defaultOptions,
-			storageName: this.getStorageNameForOrigin(origin)
+			storageName: this.getStorageNameForOrigin(origin),
 		});
 	}
 
 	@memoizeMethod
-	async getAllOrigins(): Promise<Map<string, OptionsSync<TOptions>>> {
+	async getAllOrigins(): Promise<Map<string, OptionsSync<UserOptions>>> {
 		if (isContentScript()) {
 			throw new Error('This function only works on extension pages');
 		}
 
-		const instances = new Map<string, OptionsSync<TOptions>>();
+		const instances = new Map<string, OptionsSync<UserOptions>>();
 		instances.set('default', this.getOptionsForOrigin());
 
 		const {origins} = await getAdditionalPermissions({strictOrigins: false});
 		for (const origin of origins) {
 			instances.set(
 				parseHost(origin),
-				this.getOptionsForOrigin(origin)
+				this.getOptionsForOrigin(origin),
 			);
 		}
 
