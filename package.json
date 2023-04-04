@@ -1,6 +1,6 @@
 {
 	"name": "webext-options-sync-per-domain",
-	"version": "3.0.0",
+	"version": "4.0.0-0",
 	"description": "Helps you manage and autosave your extension's options, separately for each additional permission.",
 	"keywords": [
 		"browser",
