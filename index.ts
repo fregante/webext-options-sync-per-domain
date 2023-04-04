@@ -1,6 +1,6 @@
 import mem from 'mem';
 import {patternToRegex} from 'webext-patterns';
-import OptionsSync, {Options, Setup} from 'webext-options-sync';
+import OptionsSync, {type Options, type Setup} from 'webext-options-sync';
 import {isBackgroundPage, isContentScript} from 'webext-detect-page';
 import {getAdditionalPermissions, getManifestPermissionsSync} from 'webext-additional-permissions';
 
