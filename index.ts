@@ -1,8 +1,11 @@
 import mem from 'mem';
 import {patternToRegex} from 'webext-patterns';
-import OptionsSync, {Options, Setup} from 'webext-options-sync';
+import OptionsSync, {type Options, type Setup} from 'webext-options-sync';
 import {isBackgroundPage, isContentScript} from 'webext-detect-page';
-import {getAdditionalPermissions, getManifestPermissionsSync} from 'webext-additional-permissions';
+import {
+	getAdditionalPermissions,
+	getManifestPermissionsSync,
+} from 'webext-additional-permissions';
 
 // Export OptionsSync so that OptionsSyncPerDomain users can use it in `options-storage` without depending on it directly
 export * from 'webext-options-sync';
@@ -12,16 +15,24 @@ export {default as OptionsSync} from 'webext-options-sync';
 type BaseStorageName = string;
 
 // Memoized to have it evaluate once
-const defaultOrigins = mem(() => patternToRegex(...getManifestPermissionsSync().origins));
+const defaultOrigins = mem(() =>
+	patternToRegex(...getManifestPermissionsSync().origins),
+);
 
 // TODO: this shouldn't memoize calls across instances
-function memoizeMethod(target: any, propertyKey: string, descriptor: PropertyDescriptor): void {
+function memoizeMethod(
+	target: any,
+	propertyKey: string,
+	descriptor: PropertyDescriptor,
+): void {
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Target should be OptionsSyncPerDomain<UserOptions>, but decorators don't pass around the generic
 	descriptor.value = mem(target[propertyKey]!);
 }
 
 function parseHost(origin: string): string {
-	return origin.includes('//') ? origin.split('/')[2]!.replace('*.', '') : origin;
+	return origin.includes('//')
+		? origin.split('/')[2]!.replace('*.', '')
+		: origin;
 }
 
 export default class OptionsSyncPerDomain<UserOptions extends Options> {
