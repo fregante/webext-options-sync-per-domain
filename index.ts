@@ -1,4 +1,4 @@
-import mem from 'mem';
+import mem, {memDecorator} from 'mem';
 import {patternToRegex} from 'webext-patterns';
 import OptionsSync, {type Options, type Setup} from 'webext-options-sync';
 import {isBackgroundPage, isContentScript} from 'webext-detect-page';
@@ -18,16 +18,6 @@ type BaseStorageName = string;
 const defaultOrigins = mem(() =>
 	patternToRegex(...getManifestPermissionsSync().origins),
 );
-
-// TODO: this shouldn't memoize calls across instances
-function memoizeMethod(
-	target: any,
-	propertyKey: string,
-	descriptor: PropertyDescriptor,
-): void {
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Target should be OptionsSyncPerDomain<UserOptions>, but decorators don't pass around the generic
-	descriptor.value = mem(target[propertyKey]!);
-}
 
 function parseHost(origin: string): string {
 	return origin.includes('//')
@@ -67,7 +57,7 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		});
 	}
 
-	@memoizeMethod
+	@memDecorator()
 	getOptionsForOrigin(origin = location.origin): OptionsSync<UserOptions> {
 		// Extension pages should always use the default options as base
 		if (!origin.startsWith('http') || defaultOrigins().test(origin)) {
@@ -80,7 +70,7 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		});
 	}
 
-	@memoizeMethod
+	@memDecorator()
 	async getAllOrigins(): Promise<Map<string, OptionsSync<UserOptions>>> {
 		if (isContentScript()) {
 			throw new Error('This function only works on extension pages');
