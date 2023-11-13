@@ -25,6 +25,12 @@ function parseHost(origin: string): string {
 		: origin;
 }
 
+export type SyncedForm = Readonly<{
+	domainCount: number;
+	getSelectedDomain: () => string;
+	onChange(callback: (domain: string) => void): void;
+}>;
+
 export default class OptionsSyncPerDomain<UserOptions extends Options> {
 	static readonly migrations = OptionsSync.migrations;
 
@@ -90,7 +96,7 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		return instances;
 	}
 
-	async syncForm(form: string | HTMLFormElement): Promise<void> {
+	async syncForm(form: string | HTMLFormElement) {
 		if (isContentScript()) {
 			throw new Error('This function only works on extension pages');
 		}
@@ -105,7 +111,11 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		// Look for other origins
 		const optionsByOrigin = await this.getAllOrigins();
 		if (optionsByOrigin.size === 1) {
-			return;
+			return Object.freeze({
+				domainCount: 1,
+				getSelectedDomain: () => 'default',
+				onChange() {/* */},
+			});
 		}
 
 		// Create domain picker
@@ -123,6 +133,16 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		wrapper.append('Domain selector: ', dropdown);
 		wrapper.classList.add('OptionsSyncPerDomain-picker');
 		form.prepend(wrapper, document.createElement('hr'));
+
+		return Object.freeze({
+			domainCount: optionsByOrigin.size,
+			getSelectedDomain: () => dropdown.value,
+			onChange(callback: (domain: string) => void): void {
+				dropdown.addEventListener('change', () => {
+					callback(dropdown.value);
+				});
+			},
+		});
 	}
 
 	private getStorageNameForOrigin(origin: string): string {
