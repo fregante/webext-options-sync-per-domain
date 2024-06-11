@@ -1,11 +1,11 @@
-import mem, {memDecorator} from 'mem';
+import memoize, {memoizeDecorator} from 'memoize';
 import {patternToRegex} from 'webext-patterns';
 import OptionsSync, {type Options, type Setup} from 'webext-options-sync';
 import {isBackgroundPage, isContentScript} from 'webext-detect-page';
 import {
-	getAdditionalPermissions,
-	getManifestPermissionsSync,
-} from 'webext-additional-permissions';
+	queryAdditionalPermissions,
+	normalizeManifestPermissions,
+} from 'webext-permissions';
 
 // Export OptionsSync so that OptionsSyncPerDomain users can use it in `options-storage` without depending on it directly
 export * from 'webext-options-sync';
@@ -15,8 +15,8 @@ export {default as OptionsSync} from 'webext-options-sync';
 type BaseStorageName = string;
 
 // Memoized to have it evaluate once
-const defaultOrigins = mem(() =>
-	patternToRegex(...getManifestPermissionsSync().origins),
+const defaultOrigins = memoize(() =>
+	patternToRegex(...normalizeManifestPermissions().origins),
 );
 
 function parseHost(origin: string): string {
@@ -63,7 +63,7 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		});
 	}
 
-	@memDecorator()
+	@memoizeDecorator()
 	getOptionsForOrigin(origin = location.origin): OptionsSync<UserOptions> {
 		// Extension pages should always use the default options as base
 		if (!origin.startsWith('http') || defaultOrigins().test(origin)) {
@@ -76,7 +76,7 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		});
 	}
 
-	@memDecorator()
+	@memoizeDecorator()
 	async getAllOrigins(): Promise<Map<string, OptionsSync<UserOptions>>> {
 		if (isContentScript()) {
 			throw new Error('This function only works on extension pages');
@@ -85,7 +85,7 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		const instances = new Map<string, OptionsSync<UserOptions>>();
 		instances.set('default', this.getOptionsForOrigin());
 
-		const {origins} = await getAdditionalPermissions({strictOrigins: false});
+		const {origins} = await queryAdditionalPermissions({strictOrigins: false});
 		for (const origin of origins) {
 			instances.set(
 				parseHost(origin),
