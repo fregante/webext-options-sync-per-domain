@@ -1,6 +1,7 @@
 {
 	"extends": "@sindresorhus/tsconfig",
 	"compilerOptions": {
+		"outDir": ".",
 		"target": "es2022",
 		"experimentalDecorators": true
 	},

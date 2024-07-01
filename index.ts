@@ -1,7 +1,7 @@
 import memoize, {memoizeDecorator} from 'memoize';
 import {patternToRegex} from 'webext-patterns';
 import OptionsSync, {type Options, type Setup} from 'webext-options-sync';
-import {isBackgroundPage, isContentScript} from 'webext-detect-page';
+import {isBackgroundPage, isContentScript} from 'webext-detect';
 import {
 	queryAdditionalPermissions,
 	normalizeManifestPermissions,
