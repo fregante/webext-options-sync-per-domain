@@ -1,5 +1,5 @@
 env:
-  IMPORT_STATEMENT: export OptionsSyncPerDomain from "webext-options-sync-per-domain"
+  IMPORT_STATEMENT: export {default} from "webext-options-sync-per-domain"
 
 # FILE GENERATED WITH: npx ghat fregante/ghatemplates/esm-lint
 # SOURCE: https://github.com/fregante/ghatemplates
