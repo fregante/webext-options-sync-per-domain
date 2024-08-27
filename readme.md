@@ -84,7 +84,7 @@ perDomainOptions.syncForm('form');
 
 </table>
 
-That's all! A domain switcher will only appear if the user adds new additional domains via `chrome.permissions.request()` or [webext-domain-permission-toggle](https://github.com/fregante/webext-domain-permission-toggle).
+That's all! A domain switcher will only appear if the user adds new additional domains via `chrome.permissions.request()` or [webext-permission-toggle](https://github.com/fregante/webext-permission-toggle).
 
 ## Concepts
 

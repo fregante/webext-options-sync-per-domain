@@ -1,4 +1,4 @@
-import memoize, {memoizeDecorator} from 'memoize';
+import {memoizeDecorator} from 'memoize';
 import {patternToRegex} from 'webext-patterns';
 import OptionsSync, {type Options, type Setup} from 'webext-options-sync';
 import {isBackgroundPage, isContentScript} from 'webext-detect';
@@ -13,11 +13,6 @@ export {default as OptionsSync} from 'webext-options-sync';
 
 /** Ensures that only the base storage name (i.e. without domain) is used in functions that require it */
 type BaseStorageName = string;
-
-// Memoized to have it evaluate once
-const defaultOrigins = memoize(() =>
-	patternToRegex(...normalizeManifestPermissions().origins),
-);
 
 function parseHost(origin: string): string {
 	return origin.includes('//')
@@ -34,13 +29,15 @@ export type SyncedForm = Readonly<{
 export default class OptionsSyncPerDomain<UserOptions extends Options> {
 	static readonly migrations = OptionsSync.migrations;
 
+	readonly #defaultOrigins = patternToRegex(...normalizeManifestPermissions().origins);
+
 	readonly #defaultOptions: Readonly<Setup<UserOptions> & {storageName: BaseStorageName}>;
 
 	constructor(options: Setup<UserOptions>) {
 		// Apply defaults
 		this.#defaultOptions = {
+			storageName: 'options',
 			...options,
-			storageName: options.storageName ?? 'options',
 		};
 
 		if (!isBackgroundPage()) {
@@ -48,15 +45,14 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		}
 
 		// Run migrations for every origin
-		// eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-		if (options.migrations?.length! > 0) {
+		if (options.migrations?.length) {
 			this.getAllOrigins();
 		}
 
 		// Delete stored options when permissions are removed
 		chrome.permissions.onRemoved.addListener(({origins}) => {
 			const storageKeysToRemove = (origins ?? [])
-				.filter(key => !defaultOrigins().test(key))
+				.filter(key => !this.#defaultOrigins.test(key))
 				.map(key => this.getStorageNameForOrigin(key));
 
 			chrome.storage.sync.remove(storageKeysToRemove);
@@ -66,7 +62,7 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 	@memoizeDecorator()
 	getOptionsForOrigin(origin = location.origin): OptionsSync<UserOptions> {
 		// Extension pages should always use the default options as base
-		if (!origin.startsWith('http') || defaultOrigins().test(origin)) {
+		if (!origin.startsWith('http') || this.#defaultOrigins.test(origin)) {
 			return new OptionsSync(this.#defaultOptions);
 		}
 
