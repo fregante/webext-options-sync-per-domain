@@ -33,6 +33,10 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 
 	readonly #defaultOptions: Readonly<Setup<UserOptions> & {storageName: BaseStorageName}>;
 
+	#syncedForm: OptionsSync<UserOptions> | undefined;
+
+	readonly #changeEventTarget = new EventTarget();
+
 	constructor(options: Setup<UserOptions>) {
 		// Apply defaults
 		this.#defaultOptions = {
@@ -81,9 +85,9 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		const instances = new Map<string, OptionsSync<UserOptions>>();
 		instances.set('default', this.getOptionsForOrigin());
 
-		for (const origin of await this.getOriginsList()) {
+		for (const {domain, origin} of await this.getAdditionalOrigins()) {
 			instances.set(
-				parseHost(origin),
+				domain,
 				this.getOptionsForOrigin(origin),
 			);
 		}
@@ -91,9 +95,12 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		return instances;
 	}
 
-	async getOriginsList(): Promise<string[]> {
+	async getAdditionalOrigins(): Promise<Array<{origin: string; domain: string}>> {
 		const {origins} = await queryAdditionalPermissions({strictOrigins: false});
-		return origins;
+		return origins.map(origin => ({
+			origin,
+			domain: parseHost(origin),
+		}));
 	}
 
 	async syncForm(form: string | HTMLFormElement) {
@@ -106,11 +113,13 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		}
 
 		// Start synching the default options
-		await this.getOptionsForOrigin().syncForm(form);
+		const currentOrigin = this.getOptionsForOrigin();
+		await currentOrigin.syncForm(form);
+		this.#syncedForm = currentOrigin;
 
 		// Look for other origins
-		const optionsByOrigin = await this.getAllOrigins();
-		if (optionsByOrigin.size === 1) {
+		const additionalOrigins = await this.getAdditionalOrigins();
+		if (additionalOrigins.length === 0) {
 			return Object.freeze({
 				domainCount: 1,
 				getSelectedDomain: () => 'default',
@@ -118,11 +127,13 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 			});
 		}
 
+		const allOrigins = ['default', ...additionalOrigins.map(item => item.domain)];
 		// Create domain picker
 		const dropdown = document.createElement('select');
-		dropdown.addEventListener('change', this._domainChangeHandler.bind(this));
-		for (const domain of optionsByOrigin.keys()) {
+		dropdown.addEventListener('change', this._domainChangeHandler);
+		for (const domain of allOrigins) {
 			const option = document.createElement('option');
+			// TODO: Use origin as value instead of domain, this makes things more consistent
 			option.value = domain;
 			option.textContent = domain;
 			dropdown.append(option);
@@ -135,10 +146,10 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		form.prepend(wrapper, document.createElement('hr'));
 
 		return Object.freeze({
-			domainCount: optionsByOrigin.size,
+			domainCount: allOrigins.length,
 			getSelectedDomain: () => dropdown.value,
-			onChange(callback: (domain: string) => void): void {
-				dropdown.addEventListener('change', () => {
+			onChange: async (callback: (domain: string) => void): Promise<void> => {
+				this.#changeEventTarget.addEventListener('change', () => {
 					callback(dropdown.value);
 				});
 			},
@@ -149,15 +160,11 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		return this.#defaultOptions.storageName + '-' + parseHost(origin);
 	}
 
-	private async _domainChangeHandler(event: Event): Promise<void> {
+	private readonly _domainChangeHandler = async (event: Event): Promise<void> => {
 		const dropdown = event.currentTarget as HTMLSelectElement;
 
-		for (const [domain, options] of await this.getAllOrigins()) {
-			if (dropdown.value === domain) {
-				options.syncForm(dropdown.form!);
-			} else {
-				options.stopSyncForm();
-			}
-		}
-	}
+		this.#syncedForm!.stopSyncForm();
+		await this.getOptionsForOrigin('https://*.' + dropdown.value + '/*').syncForm(dropdown.form!);
+		this.#changeEventTarget.dispatchEvent(new Event('change'));
+	};
 }
