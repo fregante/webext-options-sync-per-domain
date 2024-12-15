@@ -81,8 +81,7 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		const instances = new Map<string, OptionsSync<UserOptions>>();
 		instances.set('default', this.getOptionsForOrigin());
 
-		const {origins} = await queryAdditionalPermissions({strictOrigins: false});
-		for (const origin of origins) {
+		for (const origin of await this.getOriginsList()) {
 			instances.set(
 				parseHost(origin),
 				this.getOptionsForOrigin(origin),
@@ -90,6 +89,11 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		}
 
 		return instances;
+	}
+
+	async getOriginsList(): Promise<string[]> {
+		const {origins} = await queryAdditionalPermissions({strictOrigins: false});
+		return origins;
 	}
 
 	async syncForm(form: string | HTMLFormElement) {
