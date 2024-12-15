@@ -146,12 +146,12 @@ Type: `string` <br>
 Default: `location.origin` <br>
 Example: `http://example.com`
 
-#### perDomainOptions.getOriginsList()
+#### perDomainOptions.getAdditionalOrigins()
 
 Returns a list of all the origins that have been added via `chrome.permissions.request()`. This is useful if you want to display a list of domains that the user can choose from. This method does not include the default origins.
 
 ```js
-const origins = await perDomainOptions.getOriginsList();
+const origins = await perDomainOptions.getAdditionalOrigins();
 
 console.log('The user enabled the extension on:', ...origins);
 ```
