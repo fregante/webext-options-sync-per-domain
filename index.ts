@@ -160,11 +160,17 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		return this.#defaultOptions.storageName + '-' + parseHost(origin);
 	}
 
+	private getOriginFromDomain(storageName: string): string | undefined {
+		return storageName === 'default'
+			? undefined
+			: 'https://*.' + storageName + '/*';
+	}
+
 	private readonly _domainChangeHandler = async (event: Event): Promise<void> => {
 		const dropdown = event.currentTarget as HTMLSelectElement;
 
 		this.#syncedForm!.stopSyncForm();
-		await this.getOptionsForOrigin('https://*.' + dropdown.value + '/*').syncForm(dropdown.form!);
+		await this.getOptionsForOrigin(this.getOriginFromDomain(dropdown.value)).syncForm(dropdown.form!);
 		this.#changeEventTarget.dispatchEvent(new Event('change'));
 	};
 }
