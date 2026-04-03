@@ -1,7 +1,7 @@
 import {memoizeDecorator} from 'memoize';
 import {patternToRegex} from 'webext-patterns';
 import OptionsSync, {type Options, type Setup} from 'webext-options-sync';
-import {isBackgroundPage, isContentScript} from 'webext-detect';
+import {isBackground, isContentScript} from 'webext-detect';
 import {
 	queryAdditionalPermissions,
 	normalizeManifestPermissions,
@@ -44,7 +44,7 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 			...options,
 		};
 
-		if (!isBackgroundPage()) {
+		if (!isBackground()) {
 			return;
 		}
 
