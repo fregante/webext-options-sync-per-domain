@@ -3,7 +3,7 @@
 	"compilerOptions": {
 		"outDir": ".",
 		"target": "es2022",
-		"experimentalDecorators": true
+		"types": ["chrome"]
 	},
 	"files": [
 		"index.ts"
