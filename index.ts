@@ -148,7 +148,7 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 		return Object.freeze({
 			domainCount: allOrigins.length,
 			getSelectedDomain: () => dropdown.value,
-			onChange: async (callback: (domain: string) => void): Promise<void> => {
+			onChange: (callback: (domain: string) => void): void => {
 				this.#changeEventTarget.addEventListener('change', () => {
 					callback(dropdown.value);
 				});
@@ -168,9 +168,11 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 
 	private readonly _domainChangeHandler = async (event: Event): Promise<void> => {
 		const dropdown = event.currentTarget as HTMLSelectElement;
+		const newOptions = this.getOptionsForOrigin(this.getOriginFromDomain(dropdown.value));
 
 		this.#syncedForm!.stopSyncForm();
-		await this.getOptionsForOrigin(this.getOriginFromDomain(dropdown.value)).syncForm(dropdown.form!);
+		this.#syncedForm = newOptions;
+		await newOptions.syncForm(dropdown.form!);
 		this.#changeEventTarget.dispatchEvent(new Event('change'));
 	};
 }
