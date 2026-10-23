@@ -3,7 +3,7 @@ import {patternToRegex} from 'webext-patterns';
 import OptionsSync, {type Options, type Setup} from 'webext-options-sync';
 import {isBackground, isContentScript} from 'webext-detect';
 import {
-	queryAdditionalPermissions,
+	queryPermissionsDiff,
 	normalizeManifestPermissions,
 } from 'webext-permissions';
 
@@ -11,12 +11,14 @@ import {
 export * from 'webext-options-sync';
 export {default as OptionsSync} from 'webext-options-sync';
 
-/** Ensures that only the base storage name (i.e. without domain) is used in functions that require it */
+/**
+Ensures that only the base storage name (i.e. without domain) is used in functions that require it
+*/
 type BaseStorageName = string;
 
 function parseHost(origin: string): string {
 	return origin.includes('//')
-		? origin.split('/')[2]!.replace('*.', '')
+		? origin.split('/', 3)[2]!.replace('*.', '')
 		: origin;
 }
 
@@ -50,7 +52,7 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 
 		// Run migrations for every origin
 		if (options.migrations?.length) {
-			this.getAllOrigins();
+			void this.getAllOrigins();
 		}
 
 		// Delete stored options when permissions are removed
@@ -59,7 +61,7 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 				.filter(key => !this.#defaultOrigins.test(key))
 				.map(key => this.getStorageNameForOrigin(key));
 
-			chrome.storage.sync.remove(storageKeysToRemove);
+			void chrome.storage.sync.remove(storageKeysToRemove);
 		});
 	}
 
@@ -82,8 +84,9 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 			throw new Error('This function only works on extension pages');
 		}
 
-		const instances = new Map<string, OptionsSync<UserOptions>>();
-		instances.set('default', this.getOptionsForOrigin());
+		const instances = new Map<string, OptionsSync<UserOptions>>([
+			['default', this.getOptionsForOrigin()],
+		]);
 
 		for (const {domain, origin} of await this.getAdditionalOrigins()) {
 			instances.set(
@@ -96,8 +99,8 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 	}
 
 	async getAdditionalOrigins(): Promise<Array<{origin: string; domain: string}>> {
-		const {origins} = await queryAdditionalPermissions({strictOrigins: false});
-		return origins.map(origin => ({
+		const {added} = await queryPermissionsDiff({strictOrigins: false});
+		return (added?.origins ?? []).map(origin => ({
 			origin,
 			domain: parseHost(origin),
 		}));
