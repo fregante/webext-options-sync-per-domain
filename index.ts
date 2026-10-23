@@ -3,7 +3,7 @@ import {patternToRegex} from 'webext-patterns';
 import OptionsSync, {type Options, type Setup} from 'webext-options-sync';
 import {isBackground, isContentScript} from 'webext-detect';
 import {
-	queryAdditionalPermissions,
+	queryPermissionsDiff,
 	normalizeManifestPermissions,
 } from 'webext-permissions';
 
@@ -99,8 +99,8 @@ export default class OptionsSyncPerDomain<UserOptions extends Options> {
 	}
 
 	async getAdditionalOrigins(): Promise<Array<{origin: string; domain: string}>> {
-		const {origins} = await queryAdditionalPermissions({strictOrigins: false});
-		return origins.map(origin => ({
+		const {added} = await queryPermissionsDiff({strictOrigins: false});
+		return (added?.origins ?? []).map(origin => ({
 			origin,
 			domain: parseHost(origin),
 		}));

@@ -43,7 +43,7 @@
 		"webext-detect": "^6.0.0",
 		"webext-options-sync": "^4.3.0",
 		"webext-patterns": "^3.0.0",
-		"webext-permissions": "^5.0.0"
+		"webext-permissions": "^6.0.0"
 	},
 	"devDependencies": {
 		"@sindresorhus/tsconfig": "^8.1.0",
